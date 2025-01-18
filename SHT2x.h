@@ -9,9 +9,8 @@
 //
 
 
-#include "Arduino.h"
-#include "Wire.h"
-
+#include "driver/i2c_master.h"
+#include "esp_timer.h"
 
 #define SHT2x_LIB_VERSION             (F("0.5.0"))
 
@@ -22,7 +21,7 @@
 #define SHT2x_STATUS_HUMIDITY         0x02
 #define SHT2x_STATUS_CLOSED_CIRCUIT   0x03
 
-
+#define SHT2x_ADDRESS                      0x40
 //  error codes
 //  kept in sync with SHT31 library
 #define SHT2x_OK                      0x00
@@ -48,9 +47,10 @@
 class SHT2x
 {
 public:
-  SHT2x(TwoWire *wire = &Wire);
+  SHT2x(i2c_master_bus_handle_t _bus_handle);
+  ~SHT2x();
 
-  bool begin();
+  esp_err_t begin();
   //  check sensor is reachable over I2C
   bool isConnected();
 
@@ -169,18 +169,19 @@ protected:
   /** can be called after requesting temperature or humidity */
   bool      readCachedTemperature();
 
-  TwoWire* _wire;
+  i2c_master_bus_handle_t _bus_handle;
+  i2c_master_dev_handle_t _dev_handle;
 
-  uint32_t  _lastRead;
+  int64_t  _lastRead;
 
   //  for async interface
-  uint32_t  _lastRequest;
+  int64_t  _lastRequest;
   //  0 = none  1 = temp  2 = hum
   uint8_t   _requestType;
 
   uint8_t   _heatTimeout;   //  seconds
-  uint32_t  _heaterStart;
-  uint32_t  _heaterStop;
+  int64_t  _heaterStart;
+  int64_t  _heaterStop;
   bool      _heaterOn;
 
   uint16_t  _rawHumidity;
@@ -201,21 +202,21 @@ protected:
 class SHT20 : public SHT2x
 {
 public:
-  SHT20(TwoWire *wire = &Wire);
+  SHT20(i2c_master_bus_handle_t _bus_handle);
 };
 
 
 class SHT21 : public SHT2x
 {
 public:
-  SHT21(TwoWire *wire = &Wire);
+  SHT21(i2c_master_bus_handle_t _bus_handle);
 };
 
 
 class SHT25 : public SHT2x
 {
 public:
-  SHT25(TwoWire *wire = &Wire);
+  SHT25(i2c_master_bus_handle_t _bus_handle);
 };
 
 
@@ -226,14 +227,14 @@ public:
 class HTU20 : public SHT2x
 {
 public:
-  HTU20(TwoWire *wire = &Wire);
+  HTU20(i2c_master_bus_handle_t _bus_handle);
 };
 
 
 class HTU21 : public SHT2x
 {
 public:
-  HTU21(TwoWire *wire = &Wire);
+  HTU21(i2c_master_bus_handle_t _bus_handle);
 };
 
 
@@ -244,7 +245,7 @@ public:
 class Si7013 : public SHT2x
 {
 public:
-  Si7013(TwoWire *wire = &Wire);
+  Si7013(i2c_master_bus_handle_t _bus_handle);
   using SHT2x::readCachedTemperature;
 };
 
@@ -252,7 +253,7 @@ public:
 class Si7020 : public SHT2x
 {
 public:
-  Si7020(TwoWire *wire = &Wire);
+  Si7020(i2c_master_bus_handle_t _bus_handle);
   using SHT2x::readCachedTemperature;
 };
 
@@ -260,7 +261,7 @@ public:
 class Si7021 : public SHT2x
 {
 public:
-  Si7021(TwoWire *wire = &Wire);
+  Si7021(i2c_master_bus_handle_t _bus_handle);
   using SHT2x::readCachedTemperature;
 };
 
@@ -272,7 +273,7 @@ public:
 class GY21 : public SHT2x
 {
 public:
-  GY21(TwoWire *wire = &Wire);
+  GY21(i2c_master_bus_handle_t _bus_handle);
 };
 
 
